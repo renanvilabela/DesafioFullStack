@@ -137,3 +137,166 @@ Resposta esperada:
 ```bash
 Hello World!
 ```
+---
+
+## 🐳 Configuração com Docker
+
+Com o objetivo de facilitar a execução do projeto e garantir consistência entre ambientes, foi configurado o uso de Docker para containerização da aplicação.
+
+---
+
+### 1. Criação do arquivo docker-compose
+
+Na raiz do projeto, foi criado o arquivo:
+
+```bash
+docker-compose.yml
+```
+
+Responsável por orquestrar os serviços da aplicação:
+
+* Banco de dados (PostgreSQL)
+* Backend (NestJS)
+* Frontend (Next.js)
+
+---
+
+### 2. Definição dos serviços
+
+O arquivo `docker-compose.yml` contém a seguinte estrutura:
+
+```yaml
+version: '3.8'
+
+services:
+  db:
+    image: postgres
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: desafio
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: nest_backend
+    ports:
+      - "3001:3001"
+    depends_on:
+      - db
+
+  frontend:
+    build: ./frontend
+    container_name: next_frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+```
+
+---
+
+### 3. Criação dos Dockerfiles
+
+#### Backend (`/backend/Dockerfile`)
+
+```Dockerfile
+FROM node:20
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3001
+
+CMD ["npm", "run", "start:prod"]
+```
+
+---
+
+#### Frontend (`/frontend/Dockerfile`)
+
+```Dockerfile
+FROM node:20
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]
+```
+
+---
+
+### 4. Configuração de variáveis de ambiente
+
+Foi criado um arquivo `.env` no backend para configuração da conexão com o banco de dados:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@db:5432/desafio
+```
+
+Observação:
+
+* O host `db` refere-se ao nome do serviço definido no `docker-compose`
+
+---
+
+### 5. Execução dos containers
+
+Para subir todos os serviços, foi utilizado o comando:
+
+```bash
+docker-compose up --build
+```
+
+---
+
+### 6. Serviços disponíveis
+
+Após a execução, os serviços ficam disponíveis em:
+
+| Serviço  | URL                   |
+| -------- | --------------------- |
+| Frontend | http://localhost:3000 |
+| Backend  | http://localhost:3001 |
+| Banco    | localhost:5432        |
+
+---
+
+### 7. Observações
+
+* Os containers são inicializados de forma integrada
+* O backend depende do banco de dados
+* O frontend depende do backend
+* O volume `postgres_data` garante persistência dos dados do banco
+
+---
+
+### 8. Testes realizados
+
+* Containers iniciados com sucesso
+* Backend e frontend acessíveis via navegador
+* Banco de dados PostgreSQL em execução
