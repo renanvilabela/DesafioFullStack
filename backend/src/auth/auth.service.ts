@@ -29,8 +29,11 @@ export class AuthService {
       role: user.role,
     };
 
+    const { password: _, ...userWithoutPassword } = user;
+
     return {
       access_token: this.jwtService.sign(payload),
+      user: userWithoutPassword,
     };
   }
 }
